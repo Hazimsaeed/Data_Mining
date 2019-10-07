@@ -1,0 +1,219 @@
+---
+title: ""
+output:
+  html_document:
+    df_print: paged
+  word_document:
+    fig_height: 10
+    fig_width: 14
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+`Load the libraries`
+
+```{r warning=FALSE, message=FALSE}
+library(caret)
+library(pander)
+library(dplyr)
+```
+
+
+
+
+```{r}
+data("GermanCredit")
+```
+
+# •	Build a regression model to predict variable "Amount" as a function of other variables used following methodology:
+1.	Split sample randomly into training-test using a 632:368 ratio.
+2.	Build the model using the 63.2% training data and compute R-square in holdout data. (function lm() gives R-squares)
+3.	Save the coefficients,  R-square in training and holdout samples. (To compute R-square in Holdout, take the square of correlation between actual and predicted values)
+
+We'll first select best predictor variables based on step-wise regressions
+```{r}
+# fit a model
+fit <- lm(Amount~., data = GermanCredit)
+# fit stepwise model
+step_fit <- step(fit, trace = 0)
+summary(step_fit)
+```
+Based on step-wise regression we've selected a final model with 60.58% accuracy with the following variables as predictor variable.
+
+Duration,InstallmentRatePercentage,
+    Telephone,Class,CheckingAccountStatus.lt.0,CheckingAccountStatus.gt.200,
+    CreditHistory.NoCredit.AllPaid,Purpose.NewCar,Purpose.UsedCar,
+    Purpose.Furniture.Equipment,Purpose.Radio.Television,
+    Purpose.DomesticAppliance,Purpose.Repairs,Purpose.Education,
+    Purpose.Retraining,Purpose.Business,SavingsAccountBonds.lt.100,
+    SavingsAccountBonds.100.to.500,SavingsAccountBonds.500.to.1000,
+    EmploymentDuration.gt.7,Personal.Male.Single,OtherDebtorsGuarantors.CoApplicant,
+    Property.RealEstate,Property.Insurance,Property.CarOther,
+    Job.UnemployedUnskilled,Job.UnskilledResident,Job.SkilledEmployee
+    
+Subset the data
+
+```{r}
+data <-  dplyr::select(GermanCredit,
+    Amount,
+    Duration,InstallmentRatePercentage,
+    Telephone,Class,CheckingAccountStatus.lt.0,CheckingAccountStatus.gt.200,
+    CreditHistory.NoCredit.AllPaid,Purpose.NewCar,Purpose.UsedCar,
+    Purpose.Furniture.Equipment,Purpose.Radio.Television,
+    Purpose.DomesticAppliance,Purpose.Repairs,Purpose.Education,
+    Purpose.Retraining,Purpose.Business,SavingsAccountBonds.lt.100,
+    SavingsAccountBonds.100.to.500,SavingsAccountBonds.500.to.1000,
+    EmploymentDuration.gt.7,Personal.Male.Single,OtherDebtorsGuarantors.CoApplicant,
+    Property.RealEstate,Property.Insurance,Property.CarOther,
+    Job.UnemployedUnskilled,Job.UnskilledResident,Job.SkilledEmployee
+  )
+```
+
+
+## 1.	Split sample randomly into training-test using a 632:368 ratio.
+
+```{r}
+# shuffle the data first
+data <- data[sample(nrow(data)),]
+train <- sample(seq_len(nrow(data)), size = floor(0.632*nrow(data)))
+# split the data set into train and test
+train_data <- data[train,]
+test_data <- data[-train,]
+```
+
+## 2.	Build the model using the 63.2% training data and compute R-square in holdout data. (function lm() gives R-squares)
+
+```{r}
+fit <- lm(Amount~., data = train_data)
+predicted <- predict(fit, test_data)
+SSE <- sum((test_data$Amount- predicted) ^ 2)
+SST <- sum((test_data$Amount - mean(test_data$Amount)) ^ 2)
+r_sq_test <- 1 - (SSE/SST)
+r_sq_test
+```
+
+## 3.	Save the coefficients,  R-square in training and holdout samples. (To compute R-square in Holdout, take the square of correlation between actual and predicted values)
+
+```{r}
+# coefficients
+fit$coefficients
+hold_out_r2 <- cor(predicted, test_data$Amount)^2
+hold_out_r2
+```
+
+# •	Repeat steps 1-3 1000 times. Save all 1000 results.
+
+```{r}
+
+Result <- data.frame(
+  matrix(ncol = 32, nrow = 1000)
+)
+colnames(Result) <- c(
+  "Intercept",
+  colnames(data[,-1]),
+  "R_Train",
+  "R_Test",
+  "Percent_r_fall"
+  
+)
+
+for(i in 1:1000){
+
+train <- sample(seq_len(nrow(data)), size = floor(0.632*nrow(data)))
+# split the data set into train and test
+train_data <- data[train,]
+test_data <- data[-train,]
+fit <- lm(Amount~., data = train_data)
+coefficients <- fit$coefficients
+predicted <- predict(fit, test_data)
+train_r2 <- summary(fit)$r.squared
+# coefficients
+fit$coefficients
+hold_out_r2 <- cor(predicted, test_data$Amount)^2
+hold_out_r2
+
+R_fall <- (train_r2 - hold_out_r2)/train_r2
+Result[i,] <-  c(coefficients, train_r2, hold_out_r2, R_fall)
+
+}
+head(Result)
+```
+
+•	Plot the distributions of all coefficients, holdout R2, and % fall in R2.
+
+```{r}
+for(i in colnames(Result)){
+  hist(Result[,i], main = paste("Distribution of ",i))
+}
+```
+
+# •	Compute the averages of all 1000 coefficients.
+```{r}
+df.avg.sd <- data.frame(Term = colnames(Result[1:29]),Average = colMeans(Result[,1:29]))
+rownames(df.avg.sd)<- NULL
+df.avg.sd
+```
+
+# •	Compute the standard deviation of all 1000 coefficients (for each beta)
+```{r}
+sd <- sapply(Result[,1:29], sd)
+df.avg.sd$Standard.Deviation<-sd
+rownames(df.avg.sd)<- NULL
+df.avg.sd
+```
+# •	Compare average across 1000 to single model built using entire sample.
+
+Build model on entire data
+```{r}
+
+
+fit <- lm(Amount~., data = data)
+df.avg.sd$Full_model <- fit$coefficients
+df.avg.sd
+
+mean(Result$R_Train)
+summary(fit)$r.squared
+```
+Average across 1000 sample coefficients somewhat approximately close to single model built using entire sample. Train R square is close to the entire sample r square.
+
+# •	Sort each coefficient's 1000 values. Compute 2.5%-97.5% Confidence Intervals (CI). Scale these CI's down by a factor of .632^0.5 . 
+
+## Sort the data
+```{r}
+sorted_result <- apply(Result,2, sort)
+head(sorted_result)
+```
+## Calculate 2.5%-97.5% confidence interval
+```{r}
+lower_ci <- sapply(Result[,1:29], function(a){
+  mean(a) - qnorm(0.975)*sd(a)/sqrt(1000)
+})
+
+
+upper_ci <- sapply(Result[,1:29], function(a){
+  mean(a) + qnorm(0.975)*sd(a)/sqrt(1000)
+})
+print("2.5%-97.5% confidence interval")
+ci <- data.frame(Term = colnames(Result)[1:29],"lower 2.5%"= lower_ci,"upper 97.5%"= upper_ci)
+rownames(ci)<- NULL
+# scale the CI
+ci
+ci[,2:3] <- ci[,2:3]*(0.632^0.5)
+print("Confidence Interval Scaled")
+ci
+print("Single full model CI")
+confint(fit)
+```
+
+These CIs are tighter than single model CIs.
+# •	Summarize results.
+
+1. Using step-wise regression model I've first selected 28 predictor variables.
+
+2. After that I did train test split and calculated all coefficients, holdout R2 and % fall in R2.
+
+3. From the coefficients histogram it was found that all the coefficients value satisfy the assumption of central limit theorem.
+
+4. Confidence interval of training and test data set were narrower than single sample confidence interval.
