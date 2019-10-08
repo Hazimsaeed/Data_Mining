@@ -1,0 +1,264 @@
+---
+title: ""
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  word_document:
+    fig_height: 10
+    fig_width: 14
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r warning=FALSE, message=FALSE}
+library(caret)
+library(dplyr)
+library(scatterplot3d)
+# Load the data
+data("GermanCredit")
+```
+
+`Perform cluster analysis of the data for market segmentation.`
+
+
+## Overview of the data
+```{r}
+head(GermanCredit)
+```
+
+```{r}
+data <- GermanCredit[, c("Duration", "Amount", "InstallmentRatePercentage", "ResidenceDuration", "Age","NumberExistingCredits","NumberPeopleMaintenance")]
+
+
+```
+
+`I've selected the following numeric variables`
+```{r}
+colnames(data)
+```
+
+`Scale the data`
+```{r}
+standard.data <- scale(data)
+```
+
+## kmeans
+
+```{r}
+
+res_km <- kmeans(standard.data, centers = 5, nstart = 100)
+print(table(res_km$cluster))
+```
+```{r}
+plot(standard.data[,1],standard.data[,2],type="n",xlab="Duration",ylab="Amount")
+text(standard.data[,1],standard.data[,2],labels=1:nrow(standard.data),col=res_km$cluster)
+```
+## komeans
+
+
+```{r}
+source('komeans.R')
+komean_res <- komeans(standard.data,nclust=5,lnorm=2,tolerance=.001,nloops = 120,seed=3)
+```
+
+`Plot the clusters`
+```{r}
+plot(standard.data[,1],standard.data[,2],type="n",xlab="Duration",ylab="Amount")
+text(standard.data[,1],standard.data[,2],labels=1:nrow(standard.data),col=komean_res$Group)
+```
+
+# 3. Extract 2-10 k-means clusters using the variable set. Present the Variance-Accounted-For  (VAF or R-square). the local optima problem is big for all the clustering and latent class methods. So I run it 50-100 random starts.
+
+```{r}
+set.seed(123)
+# split the data
+train <- sample(1:nrow(standard.data), size = 0.7 * nrow(standard.data))
+
+VAFS_train <- numeric(10)
+VAFS_holdout <- numeric(10)
+km_train_results <- list()
+km_hold_results <- list()
+for(i in 2:10){
+  # train
+  km_res <- kmeans(standard.data[train,], centers = i, nstart = 50 )
+  km_train_results[[i]] <- km_res
+  VAF <- km_res$betweenss/ km_res$totss
+  VAFS_train[[i]] <- VAF
+  # holdout
+  km_res <- kmeans(standard.data[-train,], centers = km_res$centers, nstart = 50 )
+  km_hold_results[[i]] <- km_res
+  VAF <- km_res$betweenss/ km_res$totss
+  VAFS_holdout[[i]] <- VAF
+  
+}
+res <- data.frame(k = 2:10, VAF_train = VAFS_train[2:10],VAF_hldout = VAFS_holdout[2:10])
+res
+
+```
+
+# 4. Scree tests to choose appropriate number of k-means clusters
+
+`From the scree plot 5 cluster seems suitable. The elbow point is at 5 clusters.`
+
+# 5.	Show the scree plot.
+
+
+```{r}
+plot(res$k,  res$VAF_train, type = 'b',col='red', xlab = "Number of Clusters",
+     ylab = " VAF")
+lines(res$k,  res$VAF_hldout, type = 'b',col='blue', xlab = "Number of Clusters")
+legend(x = "bottomright",
+       legend = c("Train","Test"),
+       lty = c(1,1),
+       col = c("red","blue"))
+```
+
+## a.	VAF.
+
+`Based on 4 and 5 using VAF criterion K-means cluster with 5 clusters.`
+
+## b.	Interpretability of the segments
+
+`I first the centers with with 5 clusters.`
+
+```{r}
+library(pheatmap)
+library("RColorBrewer")
+pheatmap(res_km$centers[1:5,], color=brewer.pal(9,"Blues"))
+
+```
+`Based on the plot Interpretation as follow:`
+
+`clusters. 1	high #People Maintenance.`
+
+`clusters. 2	low age high installment rates. `
+
+`clusters. 3	high Amount and Duration.`
+
+`clusters. 4	high age,Residence Duration and installment rates.`
+
+`clusters. 5	low installment rates.`
+
+
+` plot it.`
+
+```{r}
+plot(res$k,  res$VAF_train, type = 'b',col='red', xlab = "Number of Clusters",
+     ylab = " VAF", main = "SCREE Plot for K-means clustering Testing")
+lines(res$k,  res$VAF_hldout, type = 'b',col='blue', xlab = "Number of Clusters")
+legend(x = "bottomright",
+       legend = c("Train","Test"),
+       lty = c(1,1),
+       col = c("red","blue"))
+```
+
+`By applying k means clustering the elbow appears at 5 number of clusters. Using VAF 5 cluster will be suitable here.`
+
+```{r}
+print("Clusters sizes")
+for(i in 2:5){
+  cat(paste0("Number of Cluster ",i," relative size"))
+ print( round(km_hold_results[[i]]$size))
+}
+```
+
+`Based on relative size I think 5 clusters will be most suitable.`
+
+
+```{r}
+set.seed(123)
+
+VAFS_otrain <- numeric(10)
+VAFS_oholdout <- numeric(10)
+kom_train_results <- list()
+for(i in 3:5){
+  # train
+  kom_res <- komeans(standard.data[train,], nclust  = i, lnorm=2,tolerance=.00001,nloops = 100,seed=123)
+  kom_train_results[[i]] <- kom_res
+  VAFS_otrain[[i]] <- kom_res$VAF
+  # holdout
+    kom_res <- komeans(standard.data[-train,], nclust = i,lnorm=2,tolerance=.00001,nloops = 100,seed=123)
+  VAFS_oholdout[[i]] <- kom_res$VAF
+  
+}
+res_komeans <- data.frame(k = 2:10, komeans_VAF_train = VAFS_otrain[2:10],komeans_VAF_hldout = VAFS_oholdout[2:10])
+res_komeans[2:4,]
+
+```
+
+
+`Print 5 clusters k-menas and komeans solutions`
+
+`Print both clusters VAF`
+```{r}
+cbind(res,res_komeans[,2:3])
+```
+
+`Print member in both clusters`
+
+```{r}
+table(km_res$cluster)
+table(komean_res$Group)
+```
+
+`Plot the clusters`
+```{r}
+par(mfrow = c(1,2))
+scatterplot3d(data[,1],data[,2],data[,5],xlab="Duration",ylab="Amount",zlab="Age", main= "k-means 5 cluster solution", color = res_km$cluster)
+scatterplot3d(data[,1],data[,2],data[,5],xlab="Duration",ylab="Amount",zlab="Age",main = "komeans 5 cluster solution",color=komean_res$Group+1)
+
+
+```
+
+`komeans has higher VAF than k means clustering. Based on the 3d scatter-plot it seems that`
+`kmeans clustering is more interpretable than komeans clustering. Finally We choose k-means`
+`clustering with 5 cluster over komeans overlapping cluster solution.`
+
+`By doing kmeans and komeans clustering based on VAF and Scree test I finally choose kmeans`
+`clustering with 5 cluster as final solution.`
+```{r}
+data$Group <- res_km$cluster
+data %>% 
+  group_by(Group) %>% 
+  summarise_all(list(mean))
+print("Cluser Memberships")
+table(res_km$cluster)
+```
+`1   2   3   4   5 `
+  
+`139 337 139 183 202`
+
+`Cluster 1 has 139 members with Highest #People Maintenance`
+
+`Cluster 2 has 337 members with lowest age second highest Interest Rate.`
+
+`Cluster 3 has 139 members with highest Amount and duration`
+
+`Cluster 4 has 183 members with highest age and Residence Duration.`
+
+`Cluster 5 has 202 members with the lowest installment rates.` 
+
+
+`We'll randomly choose 30 people from each cluster and recruit them over telephone.`
+
+`We'll try to recruit consumers from diverse background to make the sample unbiased for each`
+`segment.`
+
+`We'll ask people about the 7 variables used in the clustering. Based on the answer we'll`
+`assign people closer to the cluster centers.`
+
+`We can use principle component analysis for column reduction.` 
+
+`1. First take the data .`
+
+`2. Select appropriate number of principal components for columns`
+
+`3. Do principal component analysis on the columns`
+
+`4. Extract the Principal Components.`
+
+`5. Do clustering on the principal components.`
