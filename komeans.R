@@ -32,7 +32,7 @@ fun.okc.2= function (data = data, nclust = nclust, lnorm = lnorm, tolerance = to
           if (lnorm == 1) {
             w[1, m] = median(dstar[s == 1, m], na.rm = TRUE)
           }
-        }
+        } 
         for (m in 1:M) {
           if (lnorm == 2) {
             ss1 = sum((dstar[m, ] - w[1, ])^2, na.rm = TRUE)
