@@ -216,4 +216,4 @@ These CIs are tighter than single model CIs.
 
 3. From the coefficients histogram it was found that all the coefficients value satisfy the assumption of central limit theorem.
 
-4. Confidence interval of training and test data set were narrower than single sample confidence interval.
+4. Confidence interval of training and test data set were narrower than single sample confidence interval. 
