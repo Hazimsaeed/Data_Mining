@@ -261,4 +261,4 @@ table(res_km$cluster)
 
 `4. Extract the Principal Components.`
 
-`5. Do clustering on the principal components.`
+`5. Do clustering on the principal components.` 
