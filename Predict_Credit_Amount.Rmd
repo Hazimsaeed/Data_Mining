@@ -41,7 +41,7 @@ step_fit <- step(fit, trace = 0)
 summary(step_fit)
 ```
 Based on step-wise regression we've selected a final model with 60.58% accuracy with the following variables as predictor variable.
-
+ 
 Duration,InstallmentRatePercentage,
     Telephone,Class,CheckingAccountStatus.lt.0,CheckingAccountStatus.gt.200,
     CreditHistory.NoCredit.AllPaid,Purpose.NewCar,Purpose.UsedCar,
