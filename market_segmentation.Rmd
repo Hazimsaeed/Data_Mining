@@ -21,7 +21,7 @@ library(scatterplot3d)
 # Load the data
 data("GermanCredit")
 ```
-
+ 
 `Perform cluster analysis of the data for market segmentation.`
 
 
