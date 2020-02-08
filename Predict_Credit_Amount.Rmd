@@ -33,7 +33,7 @@ data("GermanCredit")
 3.	Save the coefficients,  R-square in training and holdout samples. (To compute R-square in Holdout, take the square of correlation between actual and predicted values)
 
 We'll first select best predictor variables based on step-wise regressions
-```{r}
+```{r} 
 # fit a model
 fit <- lm(Amount~., data = GermanCredit)
 # fit stepwise model
