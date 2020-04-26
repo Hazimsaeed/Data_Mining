@@ -1,6 +1,6 @@
 fun.okc.2= function (data = data, nclust = nclust, lnorm = lnorm, tolerance = tolerance) 
 {    
-  M = nrow(data)
+  M = nrow(data) 
   N = ncol(data)
   K = nclust
   niterations = 50
