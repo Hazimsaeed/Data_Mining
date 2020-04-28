@@ -13,7 +13,7 @@ fun.okc.2= function (data = data, nclust = nclust, lnorm = lnorm, tolerance = to
   sse = rep(0, niterations)
   oprevse = exp(70)
   opercentse = 1
-  i = 1 
+  i = 1  
   while ((i <= niterations) & (opercentse > tolerance)) {
     for (k in 1:K) {
       sminusk = S[, -k]
