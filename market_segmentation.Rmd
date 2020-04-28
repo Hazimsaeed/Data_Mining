@@ -29,7 +29,7 @@ data("GermanCredit")
 ```{r}
 head(GermanCredit)
 ```
-
+ 
 ```{r}
 data <- GermanCredit[, c("Duration", "Amount", "InstallmentRatePercentage", "ResidenceDuration", "Age","NumberExistingCredits","NumberPeopleMaintenance")]
 
