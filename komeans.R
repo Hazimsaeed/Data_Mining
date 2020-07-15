@@ -2,7 +2,7 @@ fun.okc.2= function (data = data, nclust = nclust, lnorm = lnorm, tolerance = to
 {    
   M = nrow(data) 
   N = ncol(data)
-  K = nclust
+  K = nclust 
   niterations = 50
   #    datanorm = apply(data, 2, fun.normalize)
   datanorm = scale(data)
