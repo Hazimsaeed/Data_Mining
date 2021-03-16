@@ -16,7 +16,7 @@ fun.okc.2= function (data = data, nclust = nclust, lnorm = lnorm, tolerance = to
   i = 1  
   while ((i <= niterations) & (opercentse > tolerance)) {
     for (k in 1:K) {
-      sminusk = S[, -k]
+      sminusk = S[, -k] 
       wminusk = W[-k, ]
       s = as.matrix(S[, k])
       w = t(as.matrix(W[k, ]))
