@@ -88,7 +88,7 @@ fun.okc.2= function (data = data, nclust = nclust, lnorm = lnorm, tolerance = to
   rrr = list(Data = data, Normalized.Data = datanorm, Tolerance = tolerance, 
              Groups = S[, 1:K], Centroids = round(W[1:K, ], 2), SSE.Percent = sse[1:i - 
                                                                                     1], VAF = vaf)
-  
+   
   
   return(rrr)
 }
